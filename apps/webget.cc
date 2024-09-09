@@ -22,8 +22,8 @@ void get_URL( const string& host, const string& path )
     string buffer;
     socket.read( buffer );
     cout << buffer << endl;
-    cout << "test1 !" <<endl;
   }
+  cout << "test1 !" <<endl;
   socket.close();
 }
 
