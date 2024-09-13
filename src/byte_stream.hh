@@ -1,6 +1,8 @@
 #pragma once
 
 #include <cstdint>
+#include <deque>
+#include <iostream>
 #include <string>
 #include <string_view>
 
@@ -18,12 +20,19 @@ public:
   Writer& writer();
   const Writer& writer() const;
 
+  // void print_stats();
+
   void set_error() { error_ = true; };       // Signal that the stream suffered an error.
   bool has_error() const { return error_; }; // Has the stream had an error?
 
 protected:
   // Please add any additional state to the ByteStream here, and not to the Writer and Reader interfaces.
   uint64_t capacity_;
+  std::string buf_{};
+  uint64_t bytes_pushed_;
+  uint64_t bytes_popped_;
+  bool close_flag_;
+
   bool error_ {};
 };
 
