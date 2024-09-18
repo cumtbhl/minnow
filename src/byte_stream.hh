@@ -28,6 +28,8 @@ public:
 protected:
   // Please add any additional state to the ByteStream here, and not to the Writer and Reader interfaces.
   uint64_t capacity_;
+  //当前 ByteStream 中的 buf_ 只是一个位于内存中的缓冲区
+  //它和计算机底层硬件没有直接的交互。要与硬件（如磁盘、网络等）进行交互
   std::string buf_{};
   uint64_t bytes_pushed_;
   uint64_t bytes_popped_;
