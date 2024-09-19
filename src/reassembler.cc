@@ -27,7 +27,7 @@ void Reassembler::insert( uint64_t first_index, string data, bool is_last_substr
     cache_bytes( first_index, move( data ), is_last_substring );
   else
     //这里是不是还要有去重操作？？？？
-    //***** 这里好像默认了first_index + data.size() > expecting_index_
+    //****** 这里好像默认了first_index + data.size() > expecting_index_
     push_bytes( first_index, move( data ), is_last_substring );
   flush_buffer();
 }
