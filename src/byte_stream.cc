@@ -39,7 +39,7 @@ uint64_t Writer::bytes_pushed() const
 
 bool Reader::is_finished() const
 {
-  return close_flag_ && bytes_buffered()==0;
+  return close_flag_ && bytes_buffered() == 0;
 }
 
 uint64_t Reader::bytes_popped() const
@@ -54,11 +54,11 @@ string_view Reader::peek() const
 
 void Reader::pop( uint64_t len )
 {
-  if (bytes_buffered()==0) {
+  if ( bytes_buffered() == 0 ) {
     return;
   }
   len = std::min( len, buf_.length() );
-  buf_.erase(0,len);
+  buf_.erase( 0, len );
   bytes_popped_ += len;
 }
 
