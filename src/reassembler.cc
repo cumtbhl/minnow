@@ -26,7 +26,7 @@ void Reassembler::insert( uint64_t first_index, string data, bool is_last_substr
   if ( first_index > expecting_index_ )
     cache_bytes( first_index, move( data ), is_last_substring );
   else
-    //这里是不是还要有去重操作？
+    //这里是不是还要有去重操作？？？？
     //***** 这里好像默认了first_index + data.size() > expecting_index_
     push_bytes( first_index, move( data ), is_last_substring );
   flush_buffer();
@@ -99,7 +99,7 @@ void Reassembler::cache_bytes( uint64_t first_index, string data, bool is_last_s
     num_bytes_pending_ -= get<1>( *left ).size();
     is_last_substring |= get<2>( *left );
   }
-  
+
   //在清理后的位置插入新片段，包括其起始索引、数据和 is_last_substring 标志。
   num_bytes_pending_ += data.size();
   unordered_bytes_.insert( left, { first_index, move( data ), is_last_substring } );
