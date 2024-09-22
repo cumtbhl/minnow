@@ -4,7 +4,7 @@ using namespace std;
 
 void TCPReceiver::receive( TCPSenderMessage message )
 {
-  //checkpoint 表示到正在期待的下一个字节的序号，用于计算message.seqno转换成abso_seqno_
+  //checkpoint 表示到正在期待的下一个字节的序号，用于计算message.seqno转换成abso_seqno_ &&？
   const uint64_t checkpoint = reassembler_.writer().bytes_pushed() + ISN_.has_value();
 
   //检查RST，有值的话需要关闭当前连接
