@@ -129,11 +129,13 @@ void TCPSender::receive( const TCPReceiverMessage& msg )
   while ( !outstanding_bytes_.empty() ) {
     auto& buffered_msg = outstanding_bytes_.front();
     
-    // 对方期待的下一字节不大于队首的字节序号，或者队首分组只有部分字节被确认
+    /*  1.excepting_seqno <= acked_seqno_ ： 表示接收方除了在outstanding_bytes_中的数据外，其他的所有数据都已经确认。  
+        2.excepting_seqno < final_seqno ： 表示buffered_msg的部分字节未确认 */
     if ( const uint64_t final_seqno = acked_seqno_ + buffered_msg.sequence_length() - buffered_msg.SYN;
          excepting_seqno <= acked_seqno_ || excepting_seqno < final_seqno )
-      break; // 这种情况下不会更改缓冲队列
+      break; 
 
+    //  如果通过了上述检查，到达下面这一步，则说明buffered_msg 已经 可以确认了
     is_acknowledged = true; // 表示有字节被确认
     num_bytes_in_flight_ -= buffered_msg.sequence_length() - syn_flag_;
     acked_seqno_ += buffered_msg.sequence_length() - syn_flag_;
@@ -154,12 +156,16 @@ void TCPSender::receive( const TCPReceiverMessage& msg )
 
 void TCPSender::tick( uint64_t ms_since_last_tick, const TransmitFunction& transmit )
 {
+  //  如果计时器超时，说明之前发送的数据包没有在规定的时间内得到确认
   if ( timer_.tick( ms_since_last_tick ).is_expired() ) {
-    transmit( outstanding_bytes_.front() ); // 只传递队首元素
+    transmit( outstanding_bytes_.front() ); 
+    //  当接收窗口大小为 0 时，意味着接收方无法再接收任何数据，发送方也不应立即进行下次重传，停止定时器的计时
     if ( wnd_size_ == 0 )
       timer_.reset();
+    //  当窗口大小大于 0 时，接收方允许接收数据，发送方开始一个新的超时计时器，其RTO_的值翻倍
     else
       timer_.timeout().reset();
+    //增加重传次数
     ++retransmission_cnt_;
   }
 }

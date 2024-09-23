@@ -83,11 +83,16 @@ public:
   const Reader& reader() const { return input_.reader(); }
 
 private:
-  //创建一个 TCPSenderMessage
+  //  创建一个 TCPSenderMessage
   TCPSenderMessage make_message( uint64_t seqno, std::string payload, bool SYN, bool FIN = false ) const;
 
+  //  发送方的数据源，TCPSender 会从这个字节流中读取数据
   ByteStream input_;
+
+  //  在 TCP 连接中，发送方的序列号从一个随机的初始值 isn_ 开始。
   Wrap32 isn_;
+  
+  //  初始的重传超时时间
   uint64_t initial_RTO_ms_;
 
   uint16_t wnd_size_ { 1 }; // 初始假定窗口大小为 1
@@ -106,9 +111,15 @@ private:
   //  标记 是否已经发送过 FIN 标志
   bool sent_fin_ {};
 
+  //  重传定时器，管理超时重传的逻辑
   RetransmissionTimer timer_;
+
+  //  存储连续重传的次数。用于判断是否需要增加重传间隔时间
   uint64_t retransmission_cnt_ {};
 
+  //  存储尚未被确认的数据段（即已经发送但未收到 ACK 的消息）
   std::queue<TCPSenderMessage> outstanding_bytes_ {};
+
+  //  记录当前发送出去但尚未被接收方确认的字节数。这些字节仍然“在飞行中”
   uint64_t num_bytes_in_flight_ {};
 };
