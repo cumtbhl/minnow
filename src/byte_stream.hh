@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <queue>
 #include <string>
 #include <string_view>
 
@@ -23,7 +24,13 @@ public:
 
 protected:
   // Please add any additional state to the ByteStream here, and not to the Writer and Reader interfaces.
-  uint64_t capacity_;
+  std::queue<std::string> bytes_ {};
+  std::string_view view_wnd_ {};
+  uint64_t capacity_ {};
+  uint64_t num_bytes_pushed_ {};
+  uint64_t num_bytes_popped_ {};
+  uint64_t num_bytes_buffered_ {};
+  bool is_closed_ {};
   bool error_ {};
 };
 

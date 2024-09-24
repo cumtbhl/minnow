@@ -14,6 +14,7 @@ public:
   explicit Wrap32( uint32_t raw_value ) : raw_value_( raw_value ) {}
 
   /* Construct a Wrap32 given an absolute sequence number n and the zero point. */
+  //传入一个absSeqno，将其转化成Seqno
   static Wrap32 wrap( uint64_t n, Wrap32 zero_point );
 
   /*
@@ -29,5 +30,5 @@ public:
   bool operator==( const Wrap32& other ) const { return raw_value_ == other.raw_value_; }
 
 protected:
-  uint32_t raw_value_ {};
+  uint32_t raw_value_ {}; //存储从 64 位 包装后的 32 位整数
 };
