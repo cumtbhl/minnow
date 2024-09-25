@@ -28,9 +28,11 @@ public:
                     const Address& ip_address );
 
  
-  //  解析ip地址 next_hop 为 mac地址，将dgram 发送到 mac地址
+  //  将dgram 发送到 next_hop 的 mac地址
+  //  如果next_hop 的 mac地址不知道，则发送一个ARP请求
   void send_datagram( const InternetDatagram& dgram, const Address& next_hop );
 
+  //  接收传来的frame
   void recv_frame( const EthernetFrame& frame );
 
   //  清理mapping_table_ 和 arp_recorder_中超时的映射
@@ -93,9 +95,10 @@ private:
   //  以太网到 IP 地址的地址映射表
   std::unordered_map<uint32_t, address_mapping> mapping_table_ {};
 
-  // 标记某个 IP 地址解析请求是否在 5 秒内发出过，`value` 为计时器
+  //  标记某个 IP 地址解析请求是否在 5 秒内发出过，`value` 为计时器
   std::unordered_map<uint32_t, size_t> arp_recorder_ {};
 
-  // 正在等待 ARP 响应的数据报，`key` 为目的 IP 地址
+  //  正在等待 ARP 响应的数据报，`key` 为数据报 预计发往的 IP 地址
+  //  可能出现多个数据报等待 同一个目标 IP 地址的 情况
   std::unordered_multimap<uint32_t, InternetDatagram> dgrams_waiting_addr_ {};
 };

@@ -19,8 +19,6 @@ NetworkInterface::NetworkInterface( string_view name,
        << ip_address.ip() << "\n";
 }
 
-//  dgram : NetworkInterface要发送的数据报
-//  next_hop : 下一跳的ip地址
 void NetworkInterface::send_datagram( const InternetDatagram& dgram, const Address& next_hop )
 {
   //  将 next_hop 转换为其 IPv4 数字格式，以便后续查找和处理。
@@ -51,31 +49,47 @@ void NetworkInterface::send_datagram( const InternetDatagram& dgram, const Addre
     transmit( make_frame( EthernetHeader::TYPE_IPv4, serialize( dgram ), iter->second.get_ether() ) );
 }
 
-//! \param[in] frame the incoming Ethernet frame
 void NetworkInterface::recv_frame( const EthernetFrame& frame )
 {
-  // Your code here.
+  //  如果收到的 EthernetFrame 既不是 ETHERNET_BROADCAST 又不是发往自己的，则丢弃该EthernetFrame
   if ( frame.header.dst != ETHERNET_BROADCAST && frame.header.dst != ethernet_address_ )
-    return; // 丢弃目的地址既不是广播地址也不是本接口的数据帧
+    return; 
 
+  //
   switch ( frame.header.type ) {
+
+    //  如果frame的类型是IPv4
     case EthernetHeader::TYPE_IPv4: {
       InternetDatagram ip_dgram;
+      //  parse() : 将frame.payload解析成InternetDatagram，解析的结果放入ip_dgram
+      //  如果解析失败，直接返回，完成对此次dgram的接收
       if ( !parse( ip_dgram, frame.payload ) )
         return;
-      // 解析后推入 datagrams_received_
+
+      //  如果解析成功，将ip_dgram放入datagram_received中
       datagrams_received_.emplace( move( ip_dgram ) );
     } break;
 
+    //  如果frame的类型是ARP
     case EthernetHeader::TYPE_ARP: {
       ARPMessage arp_msg;
+      //  parse() : 将frame.payload解析成ARPMessage，解析的结果放入arp_msg
+      //  如果解析失败，直接返回，完成对此次dgram的接收
       if ( !parse( arp_msg, frame.payload ) )
         return;
+      
+      //  将发送者的 IP 地址和 MAC 地址映射关系存储进 mapping_table_
+      //  当下次需要向这个发送者发送数据时，就无需再次发送 ARP 请求
       mapping_table_.insert_or_assign( arp_msg.sender_ip_address,
                                        address_mapping( arp_msg.sender_ethernet_address ) );
+      
       switch ( arp_msg.opcode ) {
+        //  如果arp_msg的类型是OPCODE_REQUEST
         case ARPMessage::OPCODE_REQUEST: {
-          // 和当前接口的 IP 地址一致，发送 ARP 响应
+          //  如果target_ip_address == 当前接口的 IP 地址
+          //  则利用arp_msg的sender_ip_address和sender_ethernet_address生成一个OPCODE_REPLY类型的ARPMessage
+          //  再将ARPMessage通过serialize序列化为字节流
+          //  最后将字节流、arp_msg的sender_ethernet_address封装成TYPE_ARP类型的EthernetFrame，发回给请求方
           if ( arp_msg.target_ip_address == ip_address_.ipv4_numeric() )
             transmit( make_frame( EthernetHeader::TYPE_ARP,
                                   serialize( make_arp_message( ARPMessage::OPCODE_REPLY,
@@ -84,13 +98,19 @@ void NetworkInterface::recv_frame( const EthernetFrame& frame )
                                   arp_msg.sender_ethernet_address ) );
         } break;
 
+        //  如果arp_msg的类型是OPCODE_REPLY
         case ARPMessage::OPCODE_REPLY: {
-          // 遍历队列发出旧数据帧
+          //  查找dgrams_waiting_addr_中所有目标ip为arp_msg.sender_ip_address的InternetDatagram，
           auto [head, tail] = dgrams_waiting_addr_.equal_range( arp_msg.sender_ip_address );
+
+          //  遍历[head, tail) 中的每个数据报
+          //  将arp_msg.sender_ethernet_address、InternetDatagram封装成IPv4类型的EthernetFrame，发送出去
           for_each( head, tail, [this, &arp_msg]( auto&& iter ) -> void {
             transmit(
               make_frame( EthernetHeader::TYPE_IPv4, serialize( iter.second ), arp_msg.sender_ethernet_address ) );
           } );
+
+          //  将[head, tail) 中的数据包发送出去后，更新dgrams_waiting_addr_
           if ( head != tail )
             dgrams_waiting_addr_.erase( head, tail );
         } break;
@@ -105,9 +125,10 @@ void NetworkInterface::recv_frame( const EthernetFrame& frame )
   }
 }
 
-//! \param[in] ms_since_last_tick the number of milliseconds since the last call to this method
 void NetworkInterface::tick( const size_t ms_since_last_tick )
 {
+  //  ms_mappings_ttl : IP 地址与 MAC 地址映射的存活时间（30 秒）
+  //  ms_resend_arp : 请求 ARP 地址解析时的超时重发时间（5 秒）
   constexpr size_t ms_mappings_ttl = 30'000, ms_resend_arp = 5'000;
   // 刷新数据表，删掉超时项
   auto flush_timer = [&ms_since_last_tick]( auto& datasheet, const size_t deadline ) -> void {
