@@ -8,7 +8,6 @@
 class TCPReceiver
 {
 public:
-  // Construct with given Reassembler
   explicit TCPReceiver( Reassembler&& reassembler ) : reassembler_( std::move( reassembler ) ) {}
 
   //该方法接收 TCPSenderMessage 类型的消息，

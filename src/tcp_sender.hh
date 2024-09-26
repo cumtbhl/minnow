@@ -56,7 +56,8 @@ public:
   //  生成一个空的 TCP 发送器消息
   TCPSenderMessage make_empty_message() const;
 
-  //  处理来自接收方的消息
+  //  1.根据传来的ackno，更新TCPSender
+  //  2.更新timer_
   void receive( const TCPReceiverMessage& msg );
 
   /*  定义了一个别名 TransmitFunction
@@ -68,7 +69,8 @@ public:
       当 push 被调用时，它可以通过这个传递进来的 transmit 函数来发送消息. */
   void push( const TransmitFunction& transmit );
 
-  /*  更新内部的重传定时器，并检查是否需要重传。 */
+  //  每到达预定时间时，TCPSender就会发生一次 tick()
+  //  更新内部的重传定时器，并检查是否需要重传。 
   void tick( uint64_t ms_since_last_tick, const TransmitFunction& transmit );
 
   //  返回当前尚未被确认的数据段的总字节数。

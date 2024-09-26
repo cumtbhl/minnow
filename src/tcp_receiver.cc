@@ -4,19 +4,19 @@ using namespace std;
 
 void TCPReceiver::receive( TCPSenderMessage message )
 {
-  //checkpoint 表示到正在期待的下一个字节的序号，用于计算message.seqno转换成abso_seqno_ &&？
+  //  checkpoint 表示到正在期待的下一个字节的序号，用于计算message.seqno转换成abso_seqno_ &&？
   const uint64_t checkpoint = reassembler_.writer().bytes_pushed() + ISN_.has_value();
 
-  //检查RST，有值的话需要关闭当前连接
+  //  检查RST，有值的话需要关闭当前连接
   if ( message.RST ) {
     reassembler_.reader().set_error();
   } 
 
-  //拦截如果接收到的序列号等于 ISN 的情况。
+  //  拦截如果接收到的序列号等于 ISN 的情况。
   else if ( checkpoint > 0 && checkpoint <= UINT32_MAX && message.seqno == ISN_ )
     return; 
 
-  //查看ISN_是否有值，判断该messag是否为首次消息
+  //  ISN_没有值，该messag为首次消息
   if ( !ISN_.has_value() ) {
     //查看SYN的值，判断这个首次消息是否合法
     if ( !message.SYN )
